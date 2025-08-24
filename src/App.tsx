@@ -16,7 +16,7 @@ type Item = { id: number; name: string; price: number; category: string };
 const CATEGORIES = ["Hardware", "Software", "Books", "Accessories"];
 
 // --- Data factory (10k rows) ---
-function createItems(n = 10_000): Item[] {
+const createItems = (n = 10_000): Item[] => {
   const rand = (min: number, max: number) =>
     Math.round(Math.random() * (max - min) + min);
   return Array.from({ length: n }, (_, i) => ({
@@ -31,7 +31,7 @@ function createItems(n = 10_000): Item[] {
 const ProductDetails = lazy(() => import("./ProductDetails"));
 
 // --- Naïve row: always re-renders when parent changes ---
-function NaiveRow({
+const NaiveRow = ({
   item,
   isFavorite,
   onToggle,
@@ -39,7 +39,7 @@ function NaiveRow({
   item: Item;
   isFavorite: boolean;
   onToggle: (id: number) => void;
-}) {
+}) => {
   // pretend-expensive derived calculation done on every render
   const cents = Array.from({ length: 500 }).reduce(
     (acc: number) => acc + item.price,
@@ -64,7 +64,7 @@ function NaiveRow({
       <span style={{ opacity: 0.3, fontSize: 12 }}>calc:{cents % 7}</span>
     </div>
   );
-}
+};
 
 // --- Optimized row: memoized + cheap props ---
 const OptimizedRow = React.memo(function OptimizedRow({
@@ -117,7 +117,7 @@ const OptimizedRow = React.memo(function OptimizedRow({
   );
 });
 
-export default function App() {
+const App = () => {
   // shared dataset
   const [items] = useState(() => createItems());
   const [favorites, setFavorites] = useState<Set<number>>(() => new Set());
@@ -286,7 +286,10 @@ export default function App() {
       </Suspense>
     </div>
   );
-}
+};
+
+export default App;
+
 // react-window row renderer (memo by default via child function + stable itemData usage)
 const RowRenderer = React.memo(function RowRenderer({
   index,
