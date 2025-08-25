@@ -30,42 +30,6 @@ const createItems = (n = 10_000): Item[] => {
 // Heavy details panel (code-split demo)
 const ProductDetails = lazy(() => import("./ProductDetails"));
 
-// --- Naïve row: always re-renders when parent changes ---
-const NaiveRow = ({
-  item,
-  isFavorite,
-  onToggle,
-}: {
-  item: Item;
-  isFavorite: boolean;
-  onToggle: (id: number) => void;
-}) => {
-  // pretend-expensive derived calculation done on every render
-  const cents = Array.from({ length: 500 }).reduce(
-    (acc: number) => acc + item.price,
-    0
-  ); // silly CPU work
-  return (
-    <div
-      style={{
-        display: "flex",
-        gap: 12,
-        padding: 6,
-        borderBottom: "1px solid #eee",
-      }}
-    >
-      <strong>{item.name}</strong>
-      <span>£{item.price}</span>
-      <span>{item.category}</span>
-      <button onClick={() => onToggle(item.id)}>
-        {isFavorite ? "★" : "☆"}
-      </button>
-      {/* use the derived var to keep TS happy so it isn’t DCE’d */}
-      <span style={{ opacity: 0.3, fontSize: 12 }}>calc:{cents % 7}</span>
-    </div>
-  );
-};
-
 // --- Optimized row: memoized + cheap props ---
 const OptimizedRow = React.memo(function OptimizedRow({
   item,
@@ -125,13 +89,6 @@ const App = () => {
   const [sortBy, setSortBy] = useState<"name" | "price">("name");
   const [showDetailsFor, setShowDetailsFor] = useState<number | null>(null);
 
-  // NAÏVE: state handlers that change every render
-  const naiveToggle = (id: number) => {
-    const next = new Set(favorites);
-    next.has(id) ? next.delete(id) : next.add(id);
-    setFavorites(next);
-  };
-
   // OPTIMIZED: stable handler + immutable Set updates
   const optToggle = useCallback((id: number) => {
     setFavorites((prev) => {
@@ -149,16 +106,6 @@ const App = () => {
   const changeSort = (key: "name" | "price") => {
     startTransition(() => setSortBy(key));
   };
-
-  // NAÏVE: filtered + sorted computed inline = re-runs every keypress + renders huge list each time
-  const naiveList = useMemo(() => {
-    const q = search.toLowerCase();
-    return items
-      .filter((it) => it.name.toLowerCase().includes(q))
-      .sort((a, b) =>
-        sortBy === "name" ? a.name.localeCompare(b.name) : a.price - b.price
-      );
-  }, [items, search, sortBy]);
 
   // OPTIMIZED: derived data memoized + based on deferred input
   const optimizedList = useMemo(() => {
@@ -215,29 +162,6 @@ const App = () => {
         </label>
         {isPending && <span style={{ opacity: 0.7 }}>sorting…</span>}
       </section>
-      <details style={{ marginTop: 16 }}>
-        <summary style={{ cursor: "pointer" }}>
-          1) Naïve list (map all items, no guards)
-        </summary>
-        <div
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: 8,
-            marginTop: 8,
-            maxHeight: 320,
-            overflow: "auto",
-          }}
-        >
-          {naiveList.map((item) => (
-            <NaiveRow
-              key={item.id}
-              item={item}
-              isFavorite={favorites.has(item.id)}
-              onToggle={naiveToggle}
-            />
-          ))}
-        </div>
-      </details>
 
       <details open style={{ marginTop: 16 }}>
         <summary style={{ cursor: "pointer" }}>
